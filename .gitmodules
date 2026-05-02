@@ -1,3 +1,6 @@
 [submodule "homelab-ansible"]
 	path = homelab-ansible
 	url = https://github.com/SuperSecureHuman/homelab-ansible.git
+[submodule "homelab-argo"]
+	path = homelab-argo
+	url = https://github.com/SuperSecureHuman/homelab-argo
