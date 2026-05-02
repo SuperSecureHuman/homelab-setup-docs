@@ -1,0 +1,9 @@
+nfs:
+  server: 192.168.0.180
+  path: /mnt/ssd_mirror/k8s_volume
+
+storageClass:
+  name: nfs-nas
+  defaultClass: true
+  reclaimPolicy: Retain
+  archiveOnDelete: false
