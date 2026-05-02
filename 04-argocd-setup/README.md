@@ -9,15 +9,15 @@ HA adds multiple replicas to the components that support it and runs Redis in Se
 
 ## Components Deployed
 
-| Component | Replicas (HA) | Purpose |
-|---|---|---|
-| argocd-server | 2 | API + Web UI |
-| argocd-repo-server | 2 | Git repo cloning + manifest rendering |
-| argocd-application-controller | 1 (StatefulSet) | Reconciliation loop |
-| argocd-applicationset-controller | 2 | ApplicationSet generation |
-| argocd-dex-server | 1 | SSO / OIDC provider |
-| argocd-notifications-controller | 1 | Notification delivery |
-| redis-ha | 3 | In-cluster cache (Sentinel + HAProxy) |
+| Component                        | Replicas (HA)   | Purpose                               |
+|----------------------------------|-----------------|---------------------------------------|
+| argocd-server                    | 2               | API + Web UI                          |
+| argocd-repo-server               | 2               | Git repo cloning + manifest rendering |
+| argocd-application-controller    | 1 (StatefulSet) | Reconciliation loop                   |
+| argocd-applicationset-controller | 2               | ApplicationSet generation             |
+| argocd-dex-server                | 1               | SSO / OIDC provider                   |
+| argocd-notifications-controller  | 1               | Notification delivery                 |
+| redis-ha                         | 3               | In-cluster cache (Sentinel + HAProxy) |
 
 ## Prerequisites
 
@@ -83,6 +83,91 @@ Check releases: https://github.com/argoproj/argo-cd/releases
 ```bash
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v<NEW>/manifests/ha/install.yaml
 ```
+
+## Connecting homelab-argo repo to ArgoCD
+
+All Application manifests in `homelab-argo` reference this repo for values. ArgoCD must be able to clone it. The repo is public but registering it with a token avoids anonymous rate-limits and is required if it ever goes private.
+
+### 1 — Create a fine-grained GitHub token
+Use the webui to create a token with `contents:read` scope on the `homelab-argo` repo only. This limits blast radius if the token is ever exposed.
+
+```bash
+echo "Token: $TOKEN"   # copy this — shown only once
+```
+
+### 2 — Register the repo in ArgoCD
+
+ArgoCD reads repo credentials from a labelled Kubernetes secret in the `argocd` namespace.
+
+```bash
+kubectl create secret generic homelab-argo-repo \
+  -n argocd \
+  --from-literal=type=git \
+  --from-literal=url=https://github.com/SuperSecureHuman/homelab-argo.git \
+  --from-literal=username=SuperSecureHuman \
+  --from-literal=password="$TOKEN"
+
+kubectl label secret homelab-argo-repo \
+  -n argocd \
+  argocd.argoproj.io/secret-type=repository
+```
+
+### 3 — Verify
+
+```bash
+# Repo should appear as Connected
+argocd repo list
+
+# Or via kubectl
+kubectl get secret homelab-argo-repo -n argocd \
+  -o jsonpath='{.metadata.labels}' | jq
+```
+
+### Token rotation
+
+When the token expires, delete the secret and repeat steps 1–2 with a new token name (e.g. `argocd-homelab-argo-2`). ArgoCD picks up the change immediately without restart.
+
+---
+
+## App of Apps Bootstrap
+
+All child apps (`nfs-provisioner`, `prom-stack`, etc.) live as manifests under `homelab-argo/argocd/apps/`. A single root Application watches that directory — when you push a new app manifest to the repo, ArgoCD creates it automatically. No manual `kubectl apply` per app.
+
+### Root Application manifest
+
+Apply this once via the ArgoCD CLI after ArgoCD is installed and the repo is registered (section above).
+
+```bash
+argocd app create root \
+  --repo https://github.com/SuperSecureHuman/homelab-argo.git \
+  --path argocd/apps \
+  --dest-server https://kubernetes.default.svc \
+  --dest-namespace argocd \
+  --sync-policy automated \
+  --auto-prune \
+  --self-heal \
+  --revision main
+```
+
+Alternatively, create it through the ArgoCD UI: **+ New App → fill in the same values → Create**.
+
+### How it works
+
+```
+homelab-argo/argocd/apps/
+  nfs-provisioner.yaml   ← root app detects this → creates nfs-provisioner Application  ...
+```
+
+From this point, adding a new app = push a manifest to `argocd/apps/`. ArgoCD syncs it within ~3 minutes (default polling interval).
+
+### Verify
+
+```bash
+# Root app and all child apps should be Healthy + Synced
+argocd app list
+```
+
+---
 
 ## Troubleshooting
 
