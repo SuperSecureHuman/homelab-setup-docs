@@ -11,24 +11,24 @@
 - Probably need to be careful with Sd card and etcd [documentation](https://docs.k3s.io/datastore/ha-embedded)
 ## Cluster Roles
 
-| Node | IP | Arch | Role |
-|---|---|---|---|
-| node01 | 192.168.0.104 | x86_64 | k3s server — first (cluster-init, etcd bootstrap) |
-| node02 | 192.168.0.105 | x86_64 | k3s server — second |
-| pi-node02 | 192.168.0.202 | arm64 | k3s server — third (etcd member) |
-| pi-node01 | 192.168.0.201 | arm64 | k3s agent |
-| pi-node03 | 192.168.0.203 | arm64 | k3s agent |
-| pi-node04 | 192.168.0.204 | arm64 | k3s agent |
+| Node      | IP            | Arch   | Role                                              |
+|-----------|---------------|--------|---------------------------------------------------|
+| node01    | 192.168.0.104 | x86_64 | k3s server — first (cluster-init, etcd bootstrap) |
+| node02    | 192.168.0.105 | x86_64 | k3s server — second                               |
+| pi-node02 | 192.168.0.202 | arm64  | k3s server — third (etcd member)                  |
+| pi-node01 | 192.168.0.201 | arm64  | k3s agent                                         |
+| pi-node03 | 192.168.0.203 | arm64  | k3s agent                                         |
+| pi-node04 | 192.168.0.204 | arm64  | k3s agent                                         |
 
 ## Default Component Decisions
 
-| Component | Kept? | Notes |
-|---|---|---|
-| Flannel (VXLAN) | Yes | CNI — handles pod networking |
-| CoreDNS | Yes | In-cluster DNS |
-| Traefik | **Disabled** | NPM handles ingress externally for now |
-| Klipper ServiceLB | **Disabled** | MetalLB handles LoadBalancer IPs  |
-| Local-path provisioner | Default off | NFS StorageClasses used instead |
+| Component              | Kept?        | Notes                                  |
+|------------------------|--------------|----------------------------------------|
+| Flannel (VXLAN)        | Yes          | CNI — handles pod networking           |
+| CoreDNS                | Yes          | In-cluster DNS                         |
+| Traefik                | **Disabled** | NPM handles ingress externally for now |
+| Klipper ServiceLB      | **Disabled** | MetalLB handles LoadBalancer IPs       |
+| Local-path provisioner | Default off  | NFS StorageClasses used instead        |
 
 ---
 
@@ -82,14 +82,14 @@ homelab-ansible/
 
 ### Key configuration (`inventory/group_vars/k3s_cluster.yml`)
 
-| Variable | Purpose |
-|---|---|
-| `k3s_version` | Pinned k3s release (e.g. `v1.31.3+k3s1`) |
-| `token` | Shared cluster secret — set before first run |
-| `api_endpoint` | First server IP (`192.168.0.104`) |
-| `extra_server_args` | `--disable traefik --disable servicelb` |
+| Variable             | Purpose                                                  |
+|----------------------|----------------------------------------------------------|
+| `k3s_version`        | Pinned k3s release (e.g. `v1.31.3+k3s1`)                 |
+| `token`              | Shared cluster secret — set before first run             |
+| `api_endpoint`       | First server IP (`192.168.0.104`)                        |
+| `extra_server_args`  | `--disable traefik --disable servicelb`                  |
 | `server_config_yaml` | Per-node config: `node-ip`, `tls-san`, `flannel-backend` |
-| `agent_config_yaml` | Per-agent config: `node-ip` |
+| `agent_config_yaml`  | Per-agent config: `node-ip`                              |
 
 ### Docker coexistence on node01
 
@@ -171,12 +171,12 @@ sysctl --system
 
 #### 1.6 Firewall Ports (Between All Cluster Nodes)
 
-| Port | Proto | Purpose |
-|---|---|---|
-| 6443 | TCP | k3s API server |
-| 2379–2380 | TCP | etcd peer communication (server nodes only) |
-| 8472 | UDP | Flannel VXLAN overlay |
-| 10250 | TCP | kubelet metrics |
+| Port      | Proto | Purpose                                     |
+|-----------|-------|---------------------------------------------|
+| 6443      | TCP   | k3s API server                              |
+| 2379–2380 | TCP   | etcd peer communication (server nodes only) |
+| 8472      | UDP   | Flannel VXLAN overlay                       |
+| 10250     | TCP   | kubelet metrics                             |
 
 NFS: port 2049 TCP/UDP open from all cluster nodes → `<NAS_IP>` and `<SERVER_A_IP>`.
 
@@ -290,7 +290,7 @@ However, the kubeconfig and agent `api_endpoint` are both pinned to `192.168.0.1
 
 **The fix: kube-vip** — runs as a DaemonSet on server nodes and moves a Virtual IP (VIP) between them. Both the kubeconfig and `api_endpoint` then point to the VIP instead of any single node, giving transparent API failover.
 
-This is covered in **Chapter 09 — kube-vip**.
+This is covered in later with kube-vip and MetalLB setup.
 
 ## Known Limitations
 
