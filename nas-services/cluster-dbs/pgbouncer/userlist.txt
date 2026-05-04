@@ -1,0 +1,2 @@
+"admin" "Homelab@123"
+"grafana" "grafana"

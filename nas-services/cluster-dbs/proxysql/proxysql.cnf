@@ -1,0 +1,24 @@
+admin_variables=
+{
+    admin_credentials="admin:Homelab@123;radmin:Homelab@123"
+    mysql_ifaces="0.0.0.0:6032"
+}
+
+mysql_variables=
+{
+    interfaces="0.0.0.0:6033"
+    max_connections=2048
+    connect_timeout_server=3000
+    connection_max_age_ms=3600000
+}
+
+mysql_servers=
+(
+    { hostgroup_id=0, hostname="mariadb", port=3306, max_connections=500 }
+)
+
+# Users are added here on first setup, then managed via create-mysql-db.sh
+mysql_users=
+(
+    { username="root", password="Homelab@123", default_hostgroup=0, active=1 }
+)
