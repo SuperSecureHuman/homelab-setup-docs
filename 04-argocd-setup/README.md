@@ -31,7 +31,7 @@ HA adds multiple replicas to the components that support it and runs Redis in Se
 kubectl create namespace argocd
 
 # 2. Install ArgoCD HA (cluster-scoped, includes CRDs)
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.9/manifests/ha/install.yaml
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.4.4/manifests/ha/install.yaml
 
 # 3. Wait for rollout
 kubectl rollout status deployment argocd-server -n argocd
@@ -73,7 +73,7 @@ argocd login localhost:8080 --username admin --insecure
 
 ## Version Pinning
 
-Current version: `v3.3.9`
+Current version: `v3.4.4`
 
 To upgrade, update the version in the install commands above and re-apply.
 Check releases: https://github.com/argoproj/argo-cd/releases
